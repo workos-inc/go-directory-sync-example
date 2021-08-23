@@ -19,21 +19,16 @@ func main() {
 
 	flag.StringVar(&conf.Addr, "addr", ":3042", "The server addr.")
 	flag.StringVar(&conf.APIKey, "api-key", "", "The WorkOS API key.")
-	flag.StringVar(&conf.ProjectID, "project-id", "", "The WorkOS project id.")
 	flag.StringVar(&conf.Directory, "directory", "", "The WorkOS directory id.")
 	flag.Parse()
-
-  
-	//ENDPOINTS
-	//users
-	//groups
 	
-	// Configure the WorkOS SSO SDK:
+	http.Handle("/", http.FileServer(http.Dir("./static")))
+	
+	// Configure the WorkOS directory sync SDK:
 	directorysync.SetAPIKey(conf.APIKey)
 
-		// Handle login redirect:
+		// Handle users redirect:
 		http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-			//log.Printf("callback is called with %s", r.URL)
 	
 			// Retrieving user profile:
 			users, err := directorysync.ListUsers(context.Background(), directorysync.ListUsersOpts{
@@ -64,7 +59,6 @@ func main() {
 		}
 
 	
-
 	
 }
 
