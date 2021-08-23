@@ -6,8 +6,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
-
-	"github.com/workos-inc/workos-go/pkg/sso"
+	"github.com/workos-inc/workos-go/pkg/directorysync"
 )
 
 func main() {
@@ -15,62 +14,56 @@ func main() {
 		Addr        string
 		APIKey      string
 		ProjectID   string
-		RedirectURI string
-		Domain      string
+		Directory string
 	}
 
 	flag.StringVar(&conf.Addr, "addr", ":3042", "The server addr.")
 	flag.StringVar(&conf.APIKey, "api-key", "", "The WorkOS API key.")
 	flag.StringVar(&conf.ProjectID, "project-id", "", "The WorkOS project id.")
-	flag.StringVar(&conf.RedirectURI, "redirect-uri", "", "The redirect uri.")
-	flag.StringVar(&conf.Domain, "domain", "", "The domain used to register a WorkOS SSO connection.")
+	flag.StringVar(&conf.Directory, "directory", "", "The WorkOS directory id.")
 	flag.Parse()
 
-	log.Printf("launching sso demo with configuration: %+v", conf)
-
-	http.Handle("/", http.FileServer(http.Dir("./static")))
   
+	//ENDPOINTS
+	//users
+	//groups
 	
 	// Configure the WorkOS SSO SDK:
-	sso.Configure(conf.APIKey, conf.ProjectID)
+	directorysync.SetAPIKey(conf.APIKey)
 
-	// Handle login:
-	http.Handle("/login", sso.Login(sso.GetAuthorizationURLOptions{
-		Domain: conf.Domain,
-		RedirectURI: conf.RedirectURI,
-	}))
-
-	// Handle login redirect:
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("callback is called with %s", r.URL)
-
-		// Retrieving user profile:
-		profile, err := sso.GetProfileAndToken(context.Background(), sso.GetProfileAndTokenOptions{
-			Code: r.URL.Query().Get("code"),
+		// Handle login redirect:
+		http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+			//log.Printf("callback is called with %s", r.URL)
+	
+			// Retrieving user profile:
+			users, err := directorysync.ListUsers(context.Background(), directorysync.ListUsersOpts{
+				Directory: conf.Directory,
+			})
+			if err != nil {
+				log.Printf("get list users failed: %s", err)
+	
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+	
+			// Display Lists:
+			b, err := json.MarshalIndent(users, "", "    ")
+			if err != nil {
+				log.Printf("encoding list users failed: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+			}
+			w.Write(b)
+	
+			log.Printf("user list: %s", b)
 		})
-		if err != nil {
-			log.Printf("get profile failed: %s", err)
-
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
+	
+		if err := http.ListenAndServe(conf.Addr, nil); err != nil {
+			log.Panic(err)
 		}
 
-		// Display user profile:
-		b, err := json.MarshalIndent(profile, "", "    ")
-		if err != nil {
-			log.Printf("encoding profile failed: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-		}
-		w.Write(b)
-
-		log.Printf("user is logged with profile: %s", b)
-	})
-
-	if err := http.ListenAndServe(conf.Addr, nil); err != nil {
-		log.Panic(err)
-	}
+	
 
 	
 }
