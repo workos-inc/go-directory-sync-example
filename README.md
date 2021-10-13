@@ -34,7 +34,9 @@ An example Go application demonstrating how to use the [WorkOS Go SDK](https://g
    - Your Directory ID
 
 
-5. Edit the environmental variables in `main.go`.
+5. Create a file called ".env" in the root of the project and add the following environment variables, replacing xxx with the values from your WorkOS dashboard. 
+   - WORKOS_API_KEY=xxx
+   - WORKOS_DIRECTORY_ID=xxx
 
 6. The final setup step is to start the server.
    ```bash
